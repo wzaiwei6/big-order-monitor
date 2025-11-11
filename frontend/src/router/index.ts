@@ -1,10 +1,16 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import CoinMonitorView from "@/views/CoinMonitorView.vue";
+import SummaryView from "@/views/SummaryView.vue";
 
 const routes: RouteRecordRaw[] = [
   {
     path: "/",
     redirect: "/btc"
+  },
+  {
+    path: "/summary",
+    name: "summary",
+    component: SummaryView
   },
   {
     path: "/btc",

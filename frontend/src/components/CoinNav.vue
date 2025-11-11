@@ -9,6 +9,13 @@
     >
       {{ coin.displayName }}
     </router-link>
+    <router-link
+      to="/summary"
+      class="coin-btn"
+      :class="{ active: currentCoin === 'summary' }"
+    >
+      汇总
+    </router-link>
   </nav>
 </template>
 
@@ -21,8 +28,8 @@ const route = useRoute();
 const coins = COIN_LIST;
 
 const currentCoin = computed(() => {
-  const path = route.path;
-  return path.substring(1) || "btc";
+  const segment = route.path.replace(/^\//, "");
+  return segment || "btc";
 });
 </script>
 

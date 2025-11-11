@@ -59,12 +59,12 @@ func Load() Config {
 			Port: getEnv("SERVER_PORT", "8080"),
 		},
 		MySQL: MySQLConfig{
-			Host:     getEnv("MYSQL_HOST", "47.128.154.233"),
-			Port:     getEnv("MYSQL_PORT", "32066"),
-			User:     getEnv("MYSQL_USER", "root"),
-			Password: getEnv("MYSQL_PASSWORD", "hadamysqlroot@@pass"),
-			Database: getEnv("MYSQL_DATABASE", "order_data"),
-			Params:   getEnv("MYSQL_PARAMS", "parseTime=true&loc=Asia%2FShanghai"),
+			Host:     getEnv("MYSQL_HOST", "XXX"),
+			Port:     getEnv("MYSQL_PORT", "XXX"),
+			User:     getEnv("MYSQL_USER", "XXX"),
+			Password: getEnv("MYSQL_PASSWORD", "XXX"),
+			Database: getEnv("MYSQL_DATABASE", "XXX"),
+			Params:   getEnv("MYSQL_PARAMS", "XXX"),
 		},
 		Redis: RedisConfig{
 			Enabled: getEnv("REDIS_ENABLED", "false") == "true",
