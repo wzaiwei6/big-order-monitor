@@ -1,0 +1,11 @@
+# 忽略所有 markdown 文件
+*.md
+
+# 但保留重要的文档文件
+!README.md
+!CHANGELOG.md
+!CONTRIBUTING.md
+
+# 忽略测试文档
+tests/*.md
+docs/drafts/*.md
