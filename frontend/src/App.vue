@@ -8,7 +8,7 @@
           <span class="eyebrow">Binance Futures Radar</span>
           <div class="title-row">
             <h1>大额订单监控</h1>
-            <span class="subtitle">V 2.1</span>
+            <span class="subtitle">V 2.2</span>
           </div>
           <p class="description">聚焦盘口大额挂单、短周期买卖失衡与成交节奏。</p>
         </div>
