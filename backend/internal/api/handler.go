@@ -9,20 +9,22 @@ import (
 	"go.uber.org/zap"
 
 	"ordermonitor/internal/config"
+	"ordermonitor/internal/summary"
 	ws "ordermonitor/internal/websocket"
 	"ordermonitor/pkg/logger"
 )
 
 type Handler struct {
-	cfg       config.Config
-	log       *zap.Logger
-	wsManager *ws.Manager
-	redis     *redis.Client
-	db        *sql.DB
+	cfg            config.Config
+	log            *zap.Logger
+	wsManager      *ws.Manager
+	summaryManager *summary.Manager
+	redis          *redis.Client
+	db             *sql.DB
 }
 
-func NewHandler(cfg config.Config, log *zap.Logger, wsManager *ws.Manager, redis *redis.Client, db *sql.DB) *Handler {
-	return &Handler{cfg: cfg, log: log, wsManager: wsManager, redis: redis, db: db}
+func NewHandler(cfg config.Config, log *zap.Logger, wsManager *ws.Manager, summaryManager *summary.Manager, redis *redis.Client, db *sql.DB) *Handler {
+	return &Handler{cfg: cfg, log: log, wsManager: wsManager, summaryManager: summaryManager, redis: redis, db: db}
 }
 
 func (h *Handler) Health(c *gin.Context) {
@@ -65,5 +67,19 @@ func (h *Handler) Disconnect(c *gin.Context) {
 
 	h.wsManager.StopSession(req.Key)
 	c.JSON(http.StatusOK, gin.H{"message": "session stopped"})
+}
+
+func (h *Handler) StartSummary(c *gin.Context) {
+	if err := h.summaryManager.Start(); err != nil {
+		h.log.Error("summary start failed", logger.ErrorField(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "summary started"})
+}
+
+func (h *Handler) StopSummary(c *gin.Context) {
+	h.summaryManager.Stop()
+	c.JSON(http.StatusOK, gin.H{"message": "summary stopped"})
 }
 

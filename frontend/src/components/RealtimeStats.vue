@@ -1,5 +1,5 @@
 <template>
-  <section>
+  <section class="stats-panel">
     <header class="header">
       <h3>实时统计</h3>
       <span :class="badgeClass">{{ badgeText }}</span>
@@ -7,19 +7,23 @@
     <div v-if="stats" class="grid">
       <div class="item">
         <p class="label">买单墙数量</p>
-        <p class="value">{{ stats.buyWallCount }} / {{ formatNumber(stats.buyWallQty) }}</p>
+        <p class="value">{{ stats.buyWallCount }} <span>/ {{ formatNumber(stats.buyWallQty) }}</span></p>
+        <p class="caption">观察当前大额买单堆积规模</p>
       </div>
       <div class="item">
         <p class="label">卖单墙数量</p>
-        <p class="value">{{ stats.sellWallCount }} / {{ formatNumber(stats.sellWallQty) }}</p>
+        <p class="value">{{ stats.sellWallCount }} <span>/ {{ formatNumber(stats.sellWallQty) }}</span></p>
+        <p class="caption">观察当前大额卖单堆积规模</p>
       </div>
       <div class="item">
         <p class="label">买单金额</p>
         <p class="value">${{ formatNumber(stats.buyValue) }}</p>
+        <p class="caption">按照盘口价格估算的买墙名义金额</p>
       </div>
       <div class="item">
         <p class="label">卖单金额</p>
         <p class="value">${{ formatNumber(stats.sellValue) }}</p>
+        <p class="caption">按照盘口价格估算的卖墙名义金额</p>
       </div>
     </div>
     <p v-else class="placeholder">等待数据...</p>
@@ -42,10 +46,10 @@ const badgeClass = computed(() => {
 });
 
 const badgeText = computed(() => {
-  if (!stats.value) return "⚖️ 等待中";
-  if (stats.value.buyWallQty > stats.value.sellWallQty * 1.5) return "🔴 买盘占优";
-  if (stats.value.sellWallQty > stats.value.buyWallQty * 1.5) return "🟢 卖盘占优";
-  return "⚖️ 基本均衡";
+  if (!stats.value) return "等待中";
+  if (stats.value.buyWallQty > stats.value.sellWallQty * 1.5) return "买盘占优";
+  if (stats.value.sellWallQty > stats.value.buyWallQty * 1.5) return "卖盘占优";
+  return "基本均衡";
 });
 
 function formatNumber(value: number) {
@@ -54,55 +58,138 @@ function formatNumber(value: number) {
 </script>
 
 <style scoped>
+.stats-panel {
+  padding: 22px;
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-border-soft);
+  background: var(--app-panel-bg);
+  box-shadow: var(--app-shell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.header h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 8px;
+  padding: 8px 12px;
   border-radius: 999px;
-  background: #202a3b;
-  border: 1px solid #324565;
-  font-size: 12px;
+  background: var(--app-chip-bg);
+  border: 1px solid var(--app-border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.badge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #8d877d;
 }
 
 .badge.buy {
-  background: #3b1720;
-  border-color: #7a2434;
-  color: #ff9aa5;
+  background: color-mix(in srgb, var(--app-buy) 14%, transparent);
+  border-color: color-mix(in srgb, var(--app-buy) 30%, transparent);
+  color: color-mix(in srgb, var(--app-buy) 40%, var(--app-text) 60%);
+}
+
+.badge.buy::before {
+  background: var(--app-buy);
 }
 
 .badge.sell {
-  background: #14351c;
-  border-color: #1e6a38;
-  color: #76e0a6;
+  background: color-mix(in srgb, var(--app-sell) 14%, transparent);
+  border-color: color-mix(in srgb, var(--app-sell) 28%, transparent);
+  color: color-mix(in srgb, var(--app-sell) 46%, var(--app-text) 54%);
+}
+
+.badge.sell::before {
+  background: var(--app-sell);
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
+}
+
+.item {
+  min-height: 134px;
+  padding: 18px;
+  border-radius: var(--app-radius-md);
+  border: 1px solid var(--app-border);
+  background: var(--app-card-bg);
 }
 
 .label {
+  margin: 0 0 12px;
   font-size: 12px;
-  color: #9fb0cc;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-soft);
 }
 
 .value {
-  font-size: 20px;
+  margin: 0;
+  font-size: clamp(24px, 3vw, 30px);
+  line-height: 1.15;
   font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--app-text);
+}
+
+.value span {
+  font-size: 0.56em;
+  color: var(--app-text-muted);
+}
+
+.caption {
+  margin: 18px 0 0;
+  max-width: 280px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--app-text-muted);
 }
 
 .placeholder {
-  font-size: 13px;
-  color: #9fb0cc;
+  margin: 0;
+  font-size: 14px;
+  color: var(--app-text-muted);
+}
+
+@media (max-width: 768px) {
+  .stats-panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header h3 {
+    font-size: 24px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
-

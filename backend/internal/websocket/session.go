@@ -353,7 +353,7 @@ func (s *session) persistFilled(orders []tracker.FilledOrder) {
 		return
 	}
 
-	stmt, err := s.db.Prepare(`INSERT INTO orders_filled (symbol, market_type, side, price, quantity, first_seen, filled_time, duration_seconds, threshold, threshold_op) VALUES (?, ?, ?, ?, ?, FROM_UNIXTIME(?), FROM_UNIXTIME(?), ?, ?, ?)`)
+	stmt, err := s.db.Prepare(`INSERT OR IGNORE INTO orders_filled (symbol, market_type, side, price, quantity, first_seen, filled_time, duration_seconds, threshold, threshold_op) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		s.log.Warn("prepare insert failed", logger.ErrorField(err))
 		return
@@ -389,7 +389,8 @@ func (s *session) loadHistory() error {
 		return nil
 	}
 
-	rows, err := s.db.Query(`SELECT side, price, quantity, UNIX_TIMESTAMP(first_seen), UNIX_TIMESTAMP(filled_time), duration_seconds FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= NOW() - INTERVAL 4 HOUR ORDER BY filled_time ASC`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp)
+	cutoff := time.Now().Add(-4 * time.Hour).Unix()
+	rows, err := s.db.Query(`SELECT side, price, quantity, first_seen, filled_time, duration_seconds FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ? ORDER BY filled_time ASC`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp, cutoff)
 	if err != nil {
 		return err
 	}
@@ -446,7 +447,8 @@ func (s *session) checkAndReloadIfNeeded() error {
 
 	// 查询数据库中的订单数量（4小时内）
 	var dbCount int
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= NOW() - INTERVAL 4 HOUR`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp).Scan(&dbCount)
+	cutoff := time.Now().Add(-4 * time.Hour).Unix()
+	err := s.db.QueryRow(`SELECT COUNT(*) FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ?`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp, cutoff).Scan(&dbCount)
 	if err != nil {
 		return err
 	}
@@ -490,7 +492,8 @@ func (s *session) reloadHistoryFromDB() error {
 		return nil
 	}
 
-	rows, err := s.db.Query(`SELECT side, price, quantity, UNIX_TIMESTAMP(first_seen), UNIX_TIMESTAMP(filled_time), duration_seconds FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= NOW() - INTERVAL 4 HOUR ORDER BY filled_time DESC`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp)
+	cutoff := time.Now().Add(-4 * time.Hour).Unix()
+	rows, err := s.db.Query(`SELECT side, price, quantity, first_seen, filled_time, duration_seconds FROM orders_filled WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ? ORDER BY filled_time DESC`, s.req.Symbol, s.req.MarketType, s.req.Threshold, s.req.ThresholdOp, cutoff)
 	if err != nil {
 		return err
 	}
@@ -513,7 +516,7 @@ func (s *session) reloadHistoryFromDB() error {
 			FilledTime:  filledTime,
 			DurationSec: duration,
 		})
-		
+
 		// 限制加载数量，避免内存过大
 		if len(loaded) >= s.cfg.Monitor.MaxTrackedOrders {
 			break
@@ -525,11 +528,11 @@ func (s *session) reloadHistoryFromDB() error {
 	s.historyMu.Unlock()
 
 	s.log.Info("history reloaded from database", logger.Int("count", len(loaded)))
-	
+
 	// 注意：不在这里推送数据给前端
 	// 数据会通过正常的定时聚合推送机制发送
 	// 这样可以避免与 sessionRecord 的同步问题
-	
+
 	return nil
 }
 

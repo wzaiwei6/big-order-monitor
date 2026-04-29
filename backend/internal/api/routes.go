@@ -9,9 +9,11 @@ func RegisterRoutes(r *gin.Engine, h *Handler) {
 		api.GET("/sessions", h.GetSessions)
 		api.POST("/connect", h.Connect)
 		api.POST("/disconnect", h.Disconnect)
+		api.GET("/monitor/:coinId", h.GetCoinMonitor)
 		api.GET("/summary/15m", h.Get15MinuteSummary)
+		api.POST("/summary/start", h.StartSummary)
+		api.POST("/summary/stop", h.StopSummary)
 	}
 
 	r.GET("/ws", h.WebSocket)
 }
-

@@ -6,12 +6,13 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig
-	MySQL    MySQLConfig
-	Redis    RedisConfig
-	Binance  BinanceConfig
-	Monitor  MonitorConfig
-	Logger   LoggerConfig
+	Server  ServerConfig
+	MySQL   MySQLConfig
+	SQLite  SQLiteConfig
+	Redis   RedisConfig
+	Binance BinanceConfig
+	Monitor MonitorConfig
+	Logger  LoggerConfig
 }
 
 type ServerConfig struct {
@@ -26,6 +27,14 @@ type MySQLConfig struct {
 	Password string
 	Database string
 	Params   string
+}
+
+type SQLiteConfig struct {
+	Path          string
+	BusyTimeoutMS int
+	VacuumEnabled bool
+	VacuumHour    int
+	VacuumMinute  int
 }
 
 type RedisConfig struct {
@@ -43,8 +52,10 @@ type BinanceConfig struct {
 }
 
 type MonitorConfig struct {
-	MaxTrackedOrders int
-	HeartbeatTimeout int
+	MaxTrackedOrders      int
+	HeartbeatTimeout      int
+	DataRetentionHours    int
+	CleanupIntervalMinute int
 }
 
 type LoggerConfig struct {
@@ -56,15 +67,22 @@ func Load() Config {
 	return Config{
 		Server: ServerConfig{
 			Host: getEnv("SERVER_HOST", "0.0.0.0"),
-			Port: getEnv("SERVER_PORT", "8080"),
+			Port: getEnv("SERVER_PORT", "8081"),
 		},
 		MySQL: MySQLConfig{
-			Host:     getEnv("MYSQL_HOST", "XXX"),
-			Port:     getEnv("MYSQL_PORT", "XXX"),
-			User:     getEnv("MYSQL_USER", "XXX"),
-			Password: getEnv("MYSQL_PASSWORD", "XXX"),
-			Database: getEnv("MYSQL_DATABASE", "XXX"),
-			Params:   getEnv("MYSQL_PARAMS", "XXX"),
+			Host:     getEnv("MYSQL_HOST", "47.128.154.233"),
+			Port:     getEnv("MYSQL_PORT", "32066"),
+			User:     getEnv("MYSQL_USER", "root"),
+			Password: getEnv("MYSQL_PASSWORD", "hadamysqlroot@@pass"),
+			Database: getEnv("MYSQL_DATABASE", "order_data"),
+			Params:   getEnv("MYSQL_PARAMS", "parseTime=true&loc=Asia%2FShanghai"),
+		},
+		SQLite: SQLiteConfig{
+			Path:          getEnv("SQLITE_PATH", "./data/ordermonitor.db"),
+			BusyTimeoutMS: getEnvInt("SQLITE_BUSY_TIMEOUT_MS", 5000),
+			VacuumEnabled: getEnv("SQLITE_VACUUM_ENABLED", "true") == "true",
+			VacuumHour:    getEnvInt("SQLITE_VACUUM_HOUR", 4),
+			VacuumMinute:  getEnvInt("SQLITE_VACUUM_MINUTE", 0),
 		},
 		Redis: RedisConfig{
 			Enabled: getEnv("REDIS_ENABLED", "false") == "true",
@@ -79,8 +97,10 @@ func Load() Config {
 			DepthInterval: getEnv("BINANCE_DEPTH_INTERVAL", "100ms"),
 		},
 		Monitor: MonitorConfig{
-			MaxTrackedOrders: getEnvInt("MONITOR_MAX_TRACKED", 5000),
-			HeartbeatTimeout: getEnvInt("MONITOR_HEARTBEAT_TIMEOUT", 60),
+			MaxTrackedOrders:      getEnvInt("MONITOR_MAX_TRACKED", 5000),
+			HeartbeatTimeout:      getEnvInt("MONITOR_HEARTBEAT_TIMEOUT", 60),
+			DataRetentionHours:    getEnvInt("MONITOR_DATA_RETENTION_HOURS", 12),
+			CleanupIntervalMinute: getEnvInt("MONITOR_CLEANUP_INTERVAL_MINUTES", 60),
 		},
 		Logger: LoggerConfig{
 			Level: getEnv("LOG_LEVEL", "info"),
@@ -114,4 +134,3 @@ func getEnvInt(key string, def int) int {
 	}
 	return def
 }
-

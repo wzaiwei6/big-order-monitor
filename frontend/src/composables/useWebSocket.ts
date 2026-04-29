@@ -62,7 +62,7 @@ export function useWebSocket() {
   const isConnected = computed(() => socket.value?.readyState === WebSocket.OPEN);
 
   function buildUrl() {
-    const base = import.meta.env.VITE_WS_URL || "ws://localhost:8080";
+    const base = import.meta.env.VITE_WS_URL || "ws://localhost:8081";
     const params = new URLSearchParams({
       symbol: configStore.symbol,
       marketType: configStore.marketType,
@@ -213,4 +213,3 @@ export function useWebSocket() {
     statusMessage
   };
 }
-

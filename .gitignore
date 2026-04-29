@@ -1,5 +1,7 @@
 # 忽略所有 markdown 文件
 *.md
+# 忽略所有 config.go 文件
+backend/internal/config/config.go
 
 # 但保留重要的文档文件
 !README.md
@@ -9,3 +11,12 @@
 # 忽略测试文档
 tests/*.md
 docs/drafts/*.md
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+.idea/
+.vscode/
+__pycache__/
+*.pid

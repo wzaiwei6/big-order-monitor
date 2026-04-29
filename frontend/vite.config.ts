@@ -17,11 +17,11 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       proxy: {
         "/api": {
-          target: env.VITE_API_BASE_URL || "http://localhost:8080",
+          target: env.VITE_API_BASE_URL || "http://localhost:8081",
           changeOrigin: true
         },
         "/ws": {
-          target: env.VITE_WS_URL || "http://localhost:8080",
+          target: env.VITE_WS_URL || "http://localhost:8081",
           ws: true,
           changeOrigin: true
         }
@@ -29,4 +29,3 @@ export default defineConfig(({ mode }) => {
     }
   };
 });
-

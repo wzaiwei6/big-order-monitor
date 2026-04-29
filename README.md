@@ -29,10 +29,19 @@
 
 > 如果位于内网或需要镜像源，建议在首次执行前设置 `go env -w GOPROXY=https://goproxy.cn,direct`。
 
+### 币种阈值配置
+在汇总页使用的阈值来自我们新增的汇总管理模块 backend/internal/summary/worker.go 里定义的常量 DefaultSpecs。
+btc等路由页面显示的默认阈值配置在如下路径：coin-quant/big-order-monitor/frontend/src/config/coins.ts
+
+### 启动前编译
+```bash
+cd /Users/wang/PythonProjects/coin-quant/big-order-monitor/backend
+   go build -o bin/server cmd/server/main.go
+```
+
 ### 一键启动（推荐）
 ```bash
 cd /Users/wang/PythonProjects/coin-quant/order-monitor
-
 # 自动检查依赖、编译并启动前后端
 ./start.sh
 

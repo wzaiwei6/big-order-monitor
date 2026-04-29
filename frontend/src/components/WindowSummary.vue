@@ -1,7 +1,10 @@
 <template>
-  <section>
+  <section class="window-panel">
     <header class="header">
-      <h3>15 分钟买卖对比</h3>
+      <div>
+        <h3>15 分钟买卖对比</h3>
+        <p class="subhead">用短窗口观察短时主动成交偏向与放量方向。</p>
+      </div>
       <span v-if="window15m" class="hint">阈值累积 {{ formatNumber(window15m.buyQty + window15m.sellQty) }}</span>
     </header>
 
@@ -62,32 +65,62 @@ function formatNumber(value: number) {
 </script>
 
 <style scoped>
+.window-panel {
+  padding: 22px;
+  border-radius: var(--app-radius-lg);
+  border: 1px solid var(--app-border-soft);
+  background: var(--app-panel-bg);
+  box-shadow: var(--app-shell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.header h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.subhead {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--app-text-muted);
 }
 
 .hint {
-  font-size: 12px;
-  color: #9fb0cc;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--app-chip-bg);
+  border: 1px solid var(--app-border);
+  font-size: 11px;
+  color: var(--app-text-muted);
 }
 
 .chart {
-  background: #0f1626;
-  border: 1px solid #1d2a44;
-  border-radius: 10px;
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
   padding: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .bar {
   display: flex;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #1b2338;
+  background: var(--app-bar-track);
 }
 
 .segment {
@@ -96,28 +129,30 @@ function formatNumber(value: number) {
   justify-content: center;
   font-weight: 600;
   font-size: 14px;
+  letter-spacing: -0.02em;
   color: #fff;
 }
 
 .segment.buy {
-  background: linear-gradient(90deg, #7a2434, #ff9aa5);
+  background: linear-gradient(90deg, var(--app-buy-strong), var(--app-buy) 58%, var(--app-buy-soft));
 }
 
 .segment.sell {
-  background: linear-gradient(90deg, #1e6a38, #76e0a6);
+  background: linear-gradient(90deg, var(--app-sell-strong), var(--app-sell) 58%, var(--app-sell-soft));
 }
 
 .legend {
   display: flex;
   justify-content: space-between;
-  margin-top: 12px;
+  gap: 16px;
+  margin-top: 14px;
   font-size: 13px;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
 }
 
 .placeholder {
-  font-size: 13px;
-  color: #9fb0cc;
+  font-size: 14px;
+  color: var(--app-text-muted);
   margin-bottom: 16px;
 }
 
@@ -128,22 +163,58 @@ function formatNumber(value: number) {
 }
 
 .card {
-  background: #0f1626;
-  border: 1px solid #1d2a44;
-  border-radius: 8px;
-  padding: 12px;
-  color: #e6e9ef;
+  background: var(--app-card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-md);
+  padding: 14px;
+  color: var(--app-text);
 }
 
 .card header {
-  font-weight: 600;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .card p {
-  margin: 0;
+  margin: 6px 0 0;
   font-size: 13px;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
+}
+
+@media (max-width: 768px) {
+  .window-panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header h3 {
+    font-size: 20px;
+  }
+
+  .subhead {
+    font-size: 13px;
+  }
+
+  .bar {
+    height: 40px;
+  }
+
+  .segment {
+    font-size: 13px;
+  }
+
+  .legend {
+    flex-direction: column;
+    font-size: 14px;
+  }
 }
 </style>
-

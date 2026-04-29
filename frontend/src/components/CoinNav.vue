@@ -36,36 +36,62 @@ const currentCoin = computed(() => {
 <style scoped>
 .coin-nav {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 16px 0;
-  border-bottom: 1px solid #1d2a44;
-  margin-bottom: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  margin-bottom: 28px;
+  border: 1px solid var(--app-border-soft);
+  border-radius: var(--app-radius-md);
+  background: var(--app-nav-bg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .coin-btn {
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid #1d2a44;
-  background: #0f1626;
-  color: #9fb0cc;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--app-text-muted);
   text-decoration: none;
   font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   cursor: pointer;
 }
 
 .coin-btn:hover {
-  background: #1b2338;
-  border-color: #324565;
-  color: #e6e9ef;
+  border-color: var(--app-border);
+  color: var(--app-text);
+  background: var(--app-hover-bg);
 }
 
 .coin-btn.active {
-  background: #1b59b0;
-  border-color: #1b59b0;
-  color: #ffffff;
+  background: var(--app-accent);
+  border-color: color-mix(in srgb, var(--app-accent) 32%, transparent);
+  color: var(--app-accent-contrast);
+}
+
+@media (max-width: 768px) {
+  .coin-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .coin-btn {
+    min-width: 0;
+    padding: 0 10px;
+    font-size: 14px;
+  }
 }
 </style>
-

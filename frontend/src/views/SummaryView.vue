@@ -6,12 +6,11 @@
         <p class="subtitle">查看 7 个监控币种最近 15 分钟的买卖成交概要</p>
       </div>
       <div class="actions">
-        <button class="refresh" :disabled="loading" @click="loadSummary">
-          {{ loading ? "加载中..." : "刷新" }}
+        <button class="refresh" @click="loadSummary">
+          手动刷新
         </button>
-        <span class="timestamp" v-if="lastUpdated">
-          更新于 {{ formatTime(lastUpdated) }}
-        </span>
+        <span class="status" :class="{ error: statusType === 'error' }">{{ statusLabel }}</span>
+        <span class="timestamp" v-if="lastUpdated">更新于 {{ formatTime(lastUpdated) }}</span>
       </div>
     </header>
 
@@ -71,7 +70,16 @@ const entries = ref<SummaryEntry[]>([]);
 const lastUpdated = ref<number | null>(null);
 const loading = ref(false);
 const error = ref("");
+const statusMessage = ref("后端采集器运行中...");
+const statusType = ref<"normal" | "error">("normal");
 let timer: number | null = null;
+
+const statusLabel = computed(() => {
+  if (statusType.value === "error") {
+    return statusMessage.value;
+  }
+  return "自动更新 1s";
+});
 
 const enrichedEntries = computed(() =>
   entries.value.map((item) => {
@@ -104,9 +112,13 @@ async function loadSummary() {
     const data = (await resp.json()) as SummaryResponse;
     entries.value = data.coins ?? [];
     lastUpdated.value = data.generatedAt * 1000;
+    statusMessage.value = "";
+    statusType.value = "normal";
   } catch (err) {
     console.error("加载汇总失败", err);
     error.value = err instanceof Error ? err.message : "未知错误";
+    statusMessage.value = `拉取失败，稍后重试 (${error.value})`;
+    statusType.value = "error";
   } finally {
     loading.value = false;
   }
@@ -120,9 +132,9 @@ function formatTime(timestamp: number) {
   return new Date(timestamp).toLocaleTimeString();
 }
 
-onMounted(() => {
-  loadSummary();
-  timer = window.setInterval(loadSummary, 30000);
+onMounted(async () => {
+  await loadSummary();
+  timer = window.setInterval(loadSummary, 1000);
 });
 
 onUnmounted(() => {
@@ -135,12 +147,12 @@ onUnmounted(() => {
 
 <style scoped>
 .summary-layout {
-  max-width: 960px;
+  width: 100%;
   margin: 0 auto;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .summary-header {
@@ -153,13 +165,16 @@ onUnmounted(() => {
 
 .title-group h1 {
   margin: 0;
-  font-size: 26px;
-  color: #e6e9ef;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--app-text);
 }
 
 .subtitle {
   margin: 4px 0 0;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
   font-size: 14px;
 }
 
@@ -167,35 +182,61 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .refresh {
-  padding: 10px 18px;
+  padding: 9px 16px;
   border-radius: 999px;
-  border: 1px solid #1d2a44;
-  background: #1b59b0;
-  color: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--app-accent) 28%, transparent);
+  background: var(--app-accent);
+  color: var(--app-accent-contrast);
   cursor: pointer;
   font-size: 13px;
-  transition: opacity 0.2s ease;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.refresh:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.refresh:hover {
+  background: var(--app-accent-soft);
+  border-color: color-mix(in srgb, var(--app-accent-soft) 34%, transparent);
 }
 
 .timestamp {
   font-size: 13px;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.status::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--app-sell);
+}
+
+.status.error {
+  color: #ffb0b0;
+}
+
+.status.error::before {
+  background: #d96a74;
 }
 
 .error {
   padding: 14px 16px;
-  background: rgba(255, 143, 143, 0.1);
-  border: 1px solid #ff8f8f;
-  color: #ffbcbc;
-  border-radius: 10px;
+  background: rgba(181, 51, 51, 0.14);
+  border: 1px solid rgba(181, 51, 51, 0.24);
+  color: #f2c6c6;
+  border-radius: var(--app-radius-md);
 }
 
 .summary-list {
@@ -205,53 +246,66 @@ onUnmounted(() => {
 }
 
 .summary-row {
-  background: #0f1626;
-  border: 1px solid #1d2a44;
-  border-radius: 12px;
+  background: var(--app-panel-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-lg);
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  box-shadow: var(--app-shell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .row-header {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  color: #e6e9ef;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px 18px;
+  min-height: 42px;
+  color: var(--app-text);
 }
 
 .coin-info {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  min-height: 42px;
 }
 
 .coin-info h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
+  letter-spacing: -0.02em;
 }
 
 .symbol {
   font-size: 12px;
-  color: #9fb0cc;
+  color: var(--app-text-soft);
   letter-spacing: 1px;
 }
 
 .totals {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
   gap: 16px;
+  align-items: start;
+  justify-content: end;
+  min-height: 42px;
   font-size: 13px;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
+  text-align: right;
+}
+
+.totals span {
+  white-space: nowrap;
 }
 
 .bar {
   display: flex;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
-  background: #1b2338;
+  background: var(--app-bar-track);
 }
 
 .segment {
@@ -264,17 +318,52 @@ onUnmounted(() => {
 }
 
 .segment.buy {
-  background: linear-gradient(90deg, #7a2434, #ff9aa5);
+  background: linear-gradient(90deg, var(--app-buy-strong), var(--app-buy) 58%, var(--app-buy-soft));
 }
 
 .segment.sell {
-  background: linear-gradient(90deg, #1e6a38, #76e0a6);
+  background: linear-gradient(90deg, var(--app-sell-strong), var(--app-sell) 58%, var(--app-sell-soft));
 }
 
 .empty {
   padding: 40px 0;
   text-align: center;
-  color: #9fb0cc;
+  color: var(--app-text-muted);
   font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .title-group h1 {
+    font-size: 22px;
+  }
+
+  .actions {
+    gap: 10px;
+  }
+
+  .summary-row {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .row-header {
+    grid-template-columns: 1fr;
+  }
+
+  .totals {
+    gap: 8px;
+    grid-auto-flow: row;
+    justify-content: start;
+    min-height: 0;
+    text-align: left;
+  }
+
+  .bar {
+    height: 40px;
+  }
+
+  .segment {
+    font-size: 13px;
+  }
 }
 </style>

@@ -4,21 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	orderagg "ordermonitor/internal/aggregator"
+	"ordermonitor/internal/summary"
 	"ordermonitor/pkg/logger"
 )
-
-type coinSummarySpec struct {
-	ID          string
-	Symbol      string
-	DisplayName string
-	Threshold   float64
-	ThresholdOp string
-	MarketType  string
-}
 
 type summaryResponse struct {
 	GeneratedAt int64          `json:"generatedAt"`
@@ -36,27 +30,56 @@ type summaryEntry struct {
 	SellCnt     int     `json:"sellCnt"`
 }
 
-var summaryCoins = []coinSummarySpec{
-	{ID: "btc", Symbol: "btcusdt", DisplayName: "BTC", Threshold: 3, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "eth", Symbol: "ethusdt", DisplayName: "ETH", Threshold: 300, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "sol", Symbol: "solusdt", DisplayName: "SOL", Threshold: 800, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "wld", Symbol: "wldusdt", DisplayName: "WLD", Threshold: 10000, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "doge", Symbol: "dogeusdt", DisplayName: "DOGE", Threshold: 200000, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "fil", Symbol: "filusdt", DisplayName: "FIL", Threshold: 10000, ThresholdOp: "gt", MarketType: "usdtm"},
-	{ID: "bnb", Symbol: "bnbusdt", DisplayName: "BNB", Threshold: 50, ThresholdOp: "gt", MarketType: "usdtm"},
+type monitorOrderEntry struct {
+	Side        string  `json:"side"`
+	Price       float64 `json:"price"`
+	Quantity    float64 `json:"quantity"`
+	FirstSeen   int64   `json:"firstSeen"`
+	FilledTime  int64   `json:"filledTime"`
+	DurationSec int64   `json:"durationSec"`
+}
+
+type coinMonitorResponse struct {
+	GeneratedAt int64                 `json:"generatedAt"`
+	CoinID      string                `json:"coinId"`
+	Symbol      string                `json:"symbol"`
+	DisplayName string                `json:"displayName"`
+	Stats       summary.StatsSnapshot `json:"stats"`
+	Windows     []orderagg.Snapshot   `json:"windows"`
+	Orders      []monitorOrderEntry   `json:"orders"`
 }
 
 func (h *Handler) Get15MinuteSummary(c *gin.Context) {
+	if snapshots, ok := h.summaryManager.Snapshot(15 * time.Minute); ok {
+		entries := make([]summaryEntry, 0, len(snapshots))
+		for _, snap := range snapshots {
+			entries = append(entries, summaryEntry{
+				CoinID:      snap.CoinID,
+				Symbol:      snap.Symbol,
+				DisplayName: snap.DisplayName,
+				BuyQty:      snap.BuyQty,
+				SellQty:     snap.SellQty,
+				BuyCnt:      snap.BuyCnt,
+				SellCnt:     snap.SellCnt,
+			})
+		}
+
+		c.JSON(http.StatusOK, summaryResponse{
+			GeneratedAt: time.Now().Unix(),
+			Window:      "15m",
+			Coins:       entries,
+		})
+		return
+	}
+
 	if h.db == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "database not configured"})
 		return
 	}
 
-	ctx := c.Request.Context()
-
-	entries := make([]summaryEntry, 0, len(summaryCoins))
-	for _, spec := range summaryCoins {
-		entry, err := h.fetchCoinSummary(ctx, spec)
+	entries := make([]summaryEntry, 0, len(summary.DefaultSpecs))
+	for _, spec := range summary.DefaultSpecs {
+		entry, err := h.fetchCoinSummary(c.Request.Context(), spec)
 		if err != nil {
 			h.log.Warn("fetch coin summary failed", logger.String("coin", spec.ID), logger.ErrorField(err))
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch summary"})
@@ -72,10 +95,10 @@ func (h *Handler) Get15MinuteSummary(c *gin.Context) {
 	})
 }
 
-func (h *Handler) fetchCoinSummary(ctx context.Context, spec coinSummarySpec) (summaryEntry, error) {
+func (h *Handler) fetchCoinSummary(ctx context.Context, spec summary.CoinSpec) (summaryEntry, error) {
 	const query = `SELECT side, COUNT(*) AS cnt, COALESCE(SUM(quantity), 0) AS qty
 FROM orders_filled
-WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= NOW() - INTERVAL 15 MINUTE
+WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ?
 GROUP BY side`
 
 	entry := summaryEntry{
@@ -84,7 +107,8 @@ GROUP BY side`
 		DisplayName: spec.DisplayName,
 	}
 
-	rows, err := h.db.QueryContext(ctx, query, spec.Symbol, spec.MarketType, spec.Threshold, spec.ThresholdOp)
+	cutoff := time.Now().Add(-15 * time.Minute).Unix()
+	rows, err := h.db.QueryContext(ctx, query, spec.Symbol, spec.MarketType, spec.Threshold, spec.ThresholdOp, cutoff)
 	if err != nil {
 		return entry, err
 	}
@@ -122,4 +146,70 @@ GROUP BY side`
 	}
 
 	return entry, nil
+}
+
+func (h *Handler) GetCoinMonitor(c *gin.Context) {
+	coinID := strings.ToLower(strings.TrimSpace(c.Param("coinId")))
+	spec, ok := summary.LookupSpec(coinID)
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"error": "coin not found"})
+		return
+	}
+
+	snapshot, ok := h.summaryManager.CoinSnapshot(coinID)
+	if !ok {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "collector not ready"})
+		return
+	}
+
+	orders, err := h.fetchRecentOrders(c.Request.Context(), spec, 100)
+	if err != nil {
+		h.log.Warn("fetch recent orders failed", logger.String("coin", coinID), logger.ErrorField(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch orders"})
+		return
+	}
+
+	c.JSON(http.StatusOK, coinMonitorResponse{
+		GeneratedAt: time.Now().Unix(),
+		CoinID:      snapshot.CoinID,
+		Symbol:      snapshot.Symbol,
+		DisplayName: snapshot.DisplayName,
+		Stats:       snapshot.Stats,
+		Windows:     snapshot.Windows,
+		Orders:      orders,
+	})
+}
+
+func (h *Handler) fetchRecentOrders(ctx context.Context, spec summary.CoinSpec, limit int) ([]monitorOrderEntry, error) {
+	if h.db == nil {
+		return nil, nil
+	}
+
+	const query = `SELECT side, price, quantity, first_seen, filled_time, duration_seconds
+FROM orders_filled
+WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ?
+ORDER BY filled_time DESC
+LIMIT ?`
+
+	cutoff := time.Now().Add(-time.Duration(h.cfg.Monitor.DataRetentionHours) * time.Hour).Unix()
+	rows, err := h.db.QueryContext(ctx, query, spec.Symbol, spec.MarketType, spec.Threshold, spec.ThresholdOp, cutoff, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]monitorOrderEntry, 0, limit)
+	for rows.Next() {
+		var entry monitorOrderEntry
+		if err := rows.Scan(&entry.Side, &entry.Price, &entry.Quantity, &entry.FirstSeen, &entry.FilledTime, &entry.DurationSec); err != nil {
+			return nil, err
+		}
+		orders = append(orders, entry)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return orders, nil
 }
