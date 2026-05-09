@@ -1,5 +1,17 @@
 <template>
   <section class="window-panel">
+    <header class="panel-top">
+      <div class="monitor-row">
+        <h2>{{ displayName }} 大额订单监控</h2>
+        <span class="market-type">U 本位合约</span>
+        <span class="threshold-chip">监控阈值 ≥ {{ formatThreshold(threshold) }} {{ thresholdUnit }}</span>
+        <div v-if="lastUpdated" class="time-card">
+          <span class="time-label">最近更新</span>
+          <span class="timestamp">{{ formatTime(lastUpdated) }}</span>
+        </div>
+      </div>
+    </header>
+
     <header class="header">
       <div>
         <h3>15 分钟买卖对比</h3>
@@ -38,6 +50,13 @@
 import { computed } from "vue";
 import { useOrderStore } from "@/stores/order";
 
+const props = defineProps<{
+  displayName: string;
+  threshold: number;
+  thresholdUnit: string;
+  lastUpdated: number | null;
+}>();
+
 const orderStore = useOrderStore();
 const aggregates = computed(() => orderStore.aggregates);
 
@@ -62,6 +81,14 @@ const sellPercent = computed(() => 100 - buyPercent.value);
 function formatNumber(value: number) {
   return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
+
+function formatThreshold(value: number) {
+  return value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function formatTime(timestamp: number) {
+  return new Date(timestamp).toLocaleTimeString();
+}
 </script>
 
 <style scoped>
@@ -71,6 +98,90 @@ function formatNumber(value: number) {
   border: 1px solid var(--app-border-soft);
   background: var(--app-panel-bg);
   box-shadow: var(--app-shell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.panel-top {
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--app-border-soft);
+}
+
+.monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.monitor-row h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--app-text);
+}
+
+.market-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  color: var(--app-accent-soft);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 22%, transparent);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.threshold-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 22%, transparent);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--app-accent-soft);
+}
+
+.time-card {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 8px 10px;
+  min-width: 0;
+  border-radius: var(--app-radius-md);
+  border: 1px solid var(--app-border);
+  background: var(--app-chip-bg);
+}
+
+.time-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text-soft);
+}
+
+.timestamp {
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--app-text);
 }
 
 .header {
@@ -131,6 +242,8 @@ function formatNumber(value: number) {
   font-size: 14px;
   letter-spacing: -0.02em;
   color: #fff;
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
 }
 
 .segment.buy {
@@ -187,34 +300,108 @@ function formatNumber(value: number) {
 
 @media (max-width: 768px) {
   .window-panel {
-    padding: 18px;
-    border-radius: 18px;
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .panel-top {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+  }
+
+  .monitor-row {
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .monitor-row h2 {
+    width: 100%;
+    font-size: 20px;
+  }
+
+  .market-type,
+  .threshold-chip {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .time-card {
+    margin-left: auto;
+    padding: 6px 8px;
+    border-radius: 12px;
+    align-items: flex-end;
+  }
+
+  .time-label {
+    font-size: 8px;
+  }
+
+  .timestamp {
+    font-size: 12px;
   }
 
   .header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .header h3 {
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .subhead {
-    font-size: 13px;
+    margin-top: 4px;
+    font-size: 12px;
+  }
+
+  .hint {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 10px;
+  }
+
+  .chart {
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 12px;
   }
 
   .bar {
-    height: 40px;
+    height: 34px;
+    border-radius: 10px;
   }
 
   .segment {
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .legend {
     flex-direction: column;
-    font-size: 14px;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 12px;
+  }
+
+  .others {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .card {
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .card header {
+    margin-bottom: 8px;
+    font-size: 17px;
+  }
+
+  .card p {
+    font-size: 12px;
   }
 }
 </style>

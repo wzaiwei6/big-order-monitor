@@ -1,22 +1,38 @@
-# 忽略所有 markdown 文件
-*.md
-# 忽略所有 config.go 文件
-backend/internal/config/config.go
-
-# 但保留重要的文档文件
-!README.md
-!CHANGELOG.md
-!CONTRIBUTING.md
-
-# 忽略测试文档
-tests/*.md
-docs/drafts/*.md
 *.log
 *.tmp
 *.bak
 *.swp
+*.pid
 .DS_Store
 .idea/
 .vscode/
 __pycache__/
-*.pid
+
+# 忽略所有 markdown 文件
+# 但保留重要文档
+*.md
+!README.md
+!docs/*.md
+
+# 忽略后端配置文件
+backend/internal/config/config.go
+
+# 忽略测试文档
+tests/*.md
+docs/drafts/*.md
+
+# 编译产物
+backend/bin/
+
+# 数据库文件
+backend/data/
+data/
+!data/.gitkeep
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+
+# 运行时日志
+.backend.log
+.frontend.log

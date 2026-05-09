@@ -83,15 +83,27 @@ const currentCoin = computed(() => {
 
 @media (max-width: 768px) {
   .coin-nav {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    width: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 6px;
+    margin-bottom: 14px;
+    border-radius: 14px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .coin-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .coin-btn {
-    min-width: 0;
-    padding: 0 10px;
-    font-size: 14px;
+    flex: 0 0 auto;
+    min-width: 64px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 13px;
   }
 }
 </style>

@@ -39,6 +39,7 @@ func (a *windowAggregator) add(orders []tracker.FilledOrder) {
 
 func (a *windowAggregator) snapshot(now time.Time, window time.Duration) (buyQty, sellQty float64, buyCnt, sellCnt int) {
 	cutoff := now.Add(-window).Unix()
+	retentionCutoff := now.Add(-maxWindowDuration(orderagg.DefaultWindows)).Unix()
 
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -49,11 +50,15 @@ func (a *windowAggregator) snapshot(now time.Time, window time.Duration) (buyQty
 
 	filtered := a.orders[:0]
 	for _, order := range a.orders {
-		if order.FilledTime < cutoff {
+		if order.FilledTime < retentionCutoff {
 			continue
 		}
 
 		filtered = append(filtered, order)
+
+		if order.FilledTime < cutoff {
+			continue
+		}
 
 		switch order.Side {
 		case tracker.SideBuy:
@@ -87,14 +92,7 @@ func (a *windowAggregator) snapshots(now time.Time, specs []orderagg.WindowSpec)
 		return results
 	}
 
-	maxWindow := specs[0].Duration
-	for _, spec := range specs[1:] {
-		if spec.Duration > maxWindow {
-			maxWindow = spec.Duration
-		}
-	}
-
-	filterCutoff := now.Add(-maxWindow).Unix()
+	filterCutoff := now.Add(-maxWindowDuration(specs)).Unix()
 	filtered := a.orders[:0]
 
 	for _, order := range a.orders {
@@ -123,4 +121,19 @@ func (a *windowAggregator) snapshots(now time.Time, specs []orderagg.WindowSpec)
 	a.orders = filtered
 
 	return results
+}
+
+func maxWindowDuration(specs []orderagg.WindowSpec) time.Duration {
+	if len(specs) == 0 {
+		return 4 * time.Hour
+	}
+
+	maxWindow := specs[0].Duration
+	for _, spec := range specs[1:] {
+		if spec.Duration > maxWindow {
+			maxWindow = spec.Duration
+		}
+	}
+
+	return maxWindow
 }

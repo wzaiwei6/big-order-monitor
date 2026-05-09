@@ -263,9 +263,9 @@ onMounted(() => {
 .title-row h1 {
   margin: 0;
   font-family: Georgia, "Times New Roman", "Songti SC", serif;
-  font-size: clamp(28px, 4vw, 42px);
+  font-size: 40px;
   line-height: 1.08;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   font-weight: 500;
 }
 
@@ -341,21 +341,67 @@ onMounted(() => {
 
 @media (max-width: 768px) {
   .wrapper {
-    padding: 16px 14px 28px;
+    padding: 12px 10px 24px;
   }
 
   .header {
-    padding: 18px 16px 20px;
-    border-radius: 18px;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+  }
+
+  .brand {
+    gap: 6px;
+  }
+
+  .eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+  }
+
+  .title-row {
+    gap: 8px;
+  }
+
+  .title-row h1 {
+    font-size: 28px;
+    line-height: 1.12;
+  }
+
+  .subtitle {
+    min-height: 24px;
+    padding: 0 9px;
+    font-size: 10px;
   }
 
   .header-actions {
-    width: 100%;
-    justify-content: flex-start;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: auto;
+    min-width: 0;
+    justify-content: flex-end;
   }
 
   .description {
-    font-size: 13px;
+    max-width: 240px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .theme-toggle {
+    padding: 3px;
+  }
+
+  .theme-pill {
+    width: 32px;
+    min-height: 28px;
+  }
+
+  .theme-pill svg {
+    width: 15px;
+    height: 15px;
   }
 }
 </style>

@@ -24,6 +24,7 @@
           <div class="coin-info">
             <h2>{{ item.displayName }}</h2>
             <span class="symbol">{{ item.symbol.toUpperCase() }}</span>
+            <span class="threshold-chip">监控阈值 ≥ {{ formatNumber(item.threshold) }} {{ item.displayName }}</span>
           </div>
           <div class="totals">
             <span>总买：{{ formatNumber(item.buyQty) }} · {{ item.buyCnt }} 笔</span>
@@ -49,6 +50,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { getCoinConfig } from "@/config/coins";
 
 interface SummaryEntry {
   coinId: string;
@@ -88,6 +90,7 @@ const enrichedEntries = computed(() =>
     const sellPercent = 100 - buyPercent;
     return {
       ...item,
+      threshold: getCoinConfig(item.coinId)?.defaultThreshold ?? 0,
       buyPercent,
       sellPercent
     };
@@ -152,7 +155,7 @@ onUnmounted(() => {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .summary-header {
@@ -168,7 +171,7 @@ onUnmounted(() => {
   font-family: Georgia, "Times New Roman", "Songti SC", serif;
   font-size: 24px;
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   color: var(--app-text);
 }
 
@@ -242,17 +245,17 @@ onUnmounted(() => {
 .summary-list {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .summary-row {
   background: var(--app-panel-bg);
   border: 1px solid var(--app-border);
   border-radius: var(--app-radius-lg);
-  padding: 18px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   box-shadow: var(--app-shell-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -260,22 +263,23 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
-  gap: 12px 18px;
-  min-height: 42px;
+  gap: 8px 18px;
+  min-height: 28px;
   color: var(--app-text);
 }
 
 .coin-info {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 10px;
-  min-height: 42px;
+  min-height: 28px;
+  flex-wrap: wrap;
 }
 
 .coin-info h2 {
   margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.02em;
+  font-size: 17px;
+  letter-spacing: 0;
 }
 
 .symbol {
@@ -284,14 +288,31 @@ onUnmounted(() => {
   letter-spacing: 1px;
 }
 
+.threshold-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-accent) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 22%, transparent);
+  color: var(--app-accent-soft);
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
 .totals {
   display: grid;
   grid-auto-flow: column;
   gap: 16px;
   align-items: start;
   justify-content: end;
-  min-height: 42px;
-  font-size: 13px;
+  min-height: 28px;
+  font-size: 12px;
   color: var(--app-text-muted);
   text-align: right;
 }
@@ -302,7 +323,7 @@ onUnmounted(() => {
 
 .bar {
   display: flex;
-  height: 44px;
+  height: 38px;
   border-radius: 12px;
   overflow: hidden;
   background: var(--app-bar-track);
@@ -313,8 +334,10 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   color: #ffffff;
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: width;
 }
 
 .segment.buy {
@@ -333,21 +356,71 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  .summary-layout {
+    gap: 12px;
+  }
+
+  .summary-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
   .title-group h1 {
-    font-size: 22px;
+    font-size: 20px;
+  }
+
+  .subtitle {
+    font-size: 12px;
   }
 
   .actions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .refresh {
+    min-height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .status,
+  .timestamp {
+    font-size: 12px;
+  }
+
+  .summary-list {
     gap: 10px;
   }
 
   .summary-row {
-    padding: 16px;
-    border-radius: 18px;
+    padding: 12px;
+    gap: 8px;
+    border-radius: 14px;
   }
 
   .row-header {
     grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .coin-info {
+    gap: 6px;
+    min-height: 26px;
+  }
+
+  .coin-info h2 {
+    font-size: 16px;
+  }
+
+  .symbol {
+    font-size: 10px;
+  }
+
+  .threshold-chip {
+    height: 24px;
+    padding: 0 8px;
+    font-size: 10px;
   }
 
   .totals {
@@ -355,15 +428,17 @@ onUnmounted(() => {
     grid-auto-flow: row;
     justify-content: start;
     min-height: 0;
+    font-size: 11px;
     text-align: left;
   }
 
   .bar {
-    height: 40px;
+    height: 32px;
+    border-radius: 10px;
   }
 
   .segment {
-    font-size: 13px;
+    font-size: 12px;
   }
 }
 </style>

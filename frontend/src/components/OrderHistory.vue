@@ -190,21 +190,43 @@ tbody tr:hover {
 
 @media (max-width: 768px) {
   .history-panel {
-    padding: 18px;
-    border-radius: 18px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
   .header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
   }
 
   .header h3 {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .subhead {
-    font-size: 13px;
+    font-size: 12px;
+  }
+
+  .count {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .table-wrap {
+    border-radius: 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+  }
+
+  td {
+    font-size: 12px;
   }
 }
 </style>

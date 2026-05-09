@@ -1,187 +1,260 @@
-# Binance 大额订单监控系统 V2.1
+# Binance 大额订单监控系统 V2.2
 
-前后端分离的实时大单监控工具，后端使用 Go 订阅 Binance 深度数据、执行阈值判定和聚合；前端使用 Vue 3 + Vue Router 实现多币种独立监控页面。
+前后端分离的 Binance U 本位合约大额订单监控工具。后端使用 Go 订阅 Binance 深度数据、识别达到阈值的大额订单并写入 SQLite；前端使用 Vue 3 + Pinia + Vue Router 展示单币种监控和多币种汇总页面。
 
-## ✨ 主要特性（V2.1 新增）
-- 🎯 **多币种页面隔离**：BTC、ETH、SOL、WLD、DOGE、FIL、BNB 独立监控
-- 🔄 **数据一致性保障**：每 60 秒自动校验内存与数据库数据
-- 🚀 **智能路由系统**：Vue Router 4 实现快速币种切换
-- 📊 **固定 U 本位合约**：简化配置，专注 USDT 永续合约
-- 💾 **历史数据缓存**：重连时自动继承历史，避免数据丢失
-- 🧹 **自动数据清理**：超过 4 小时的旧订单自动清理
+## V2.2 主要变化
 
-## 原有特性
-- 支持 USDT 合约深度订阅（固定为 U 本位）
-- 阈值条件（≥ / ≤）触发的大单跟踪和成交识别
-- 多时间窗口聚合（15m/30m/1h/4h）实时推送
-- MySQL 持久化大单成交记录，可选 Redis 缓存
-- Vue 3 + Pinia + Vue Router 实现交互式仪表盘
+- **SQLite 存储**：默认不再依赖 MySQL，适合轻量服务器部署。
+- **Docker 部署**：补齐后端、前端 Dockerfile 和 `docker-compose.yml`，服务器上可直接构建运行。
+- **数据保留可配置**：默认保留最近 `12` 小时数据，可通过环境变量调整为 `6h/12h` 等。
+- **每日 VACUUM**：定时整理 SQLite 文件，减少长期运行后的磁盘膨胀。
+- **端口调整**：后端默认监听 `8081`，前端容器通过 Nginx 暴露 `80`。
+- **移动端适配**：支持手机访问，导航、监控卡片、汇总页和表格已做紧凑布局。
+- **日夜主题**：右上角支持太阳/月亮图标切换白天/黑夜模式。
+- **窗口统计修复**：修复汇总页读取 `15m` 数据时误裁剪 `30m/1h/4h` 缓存的问题。
 
----
+## 功能概览
 
-## 🚀 快速开始
+- 支持 BTC、ETH、SOL、WLD、DOGE、FIL、BNB 七个币种。
+- 固定监控 Binance USDT 永续合约盘口。
+- 支持大额订单阈值识别、成交记录、实时大单墙统计。
+- 支持 `15m / 30m / 1h / 4h` 多时间窗口买卖对比。
+- 支持 `/summary` 多币种 15 分钟汇总页面。
+- 支持 Docker 单机部署，SQLite 数据挂载到宿主机目录。
 
-### 前置依赖
-- Go 1.21+
-- Node.js 18+
-- MySQL 8（默认连接：`47.128.154.233:32066 / order_data`）
-- Redis（可选，用于缓存，默认关闭）
+## 快速部署：Docker 推荐
 
-> 如果位于内网或需要镜像源，建议在首次执行前设置 `go env -w GOPROXY=https://goproxy.cn,direct`。
+服务器需要先安装 Docker 和 Docker Compose。项目复制到服务器后，在项目根目录执行：
 
-### 币种阈值配置
-在汇总页使用的阈值来自我们新增的汇总管理模块 backend/internal/summary/worker.go 里定义的常量 DefaultSpecs。
-btc等路由页面显示的默认阈值配置在如下路径：coin-quant/big-order-monitor/frontend/src/config/coins.ts
-
-### 启动前编译
 ```bash
-cd /Users/wang/PythonProjects/coin-quant/big-order-monitor/backend
-   go build -o bin/server cmd/server/main.go
+mkdir -p data
+sudo docker compose up -d --build
 ```
 
-### 一键启动（推荐）
-```bash
-cd /Users/wang/PythonProjects/coin-quant/order-monitor
-# 自动检查依赖、编译并启动前后端
-./start.sh
+访问地址：
 
-# 停止服务
+```text
+http://服务器IP/btc
+http://服务器IP/summary
+```
+
+查看运行状态：
+
+```bash
+sudo docker compose ps
+sudo docker compose logs -f backend
+sudo docker compose logs -f frontend
+```
+
+停止服务：
+
+```bash
+sudo docker compose down
+```
+
+只重启不重新构建：
+
+```bash
+sudo docker compose up -d
+```
+
+更新代码后重新构建：
+
+```bash
+sudo docker compose up -d --build
+```
+
+## Docker 数据目录
+
+SQLite 数据库挂载在宿主机项目目录：
+
+```text
+./data/ordermonitor.db
+```
+
+`docker-compose.yml` 中的挂载关系：
+
+```yaml
+volumes:
+  - ./data:/app/data
+```
+
+只要不删除宿主机的 `data/` 目录，执行 `sudo docker compose up -d --build` 不会清空历史数据。后端启动时会从 SQLite 恢复最近最大窗口内的数据。
+
+## 环境变量
+
+可在服务器项目根目录创建 `.env` 覆盖默认配置：
+
+```env
+MONITOR_DATA_RETENTION_HOURS=12
+MONITOR_CLEANUP_INTERVAL_MINUTES=60
+SQLITE_VACUUM_ENABLED=true
+SQLITE_VACUUM_HOUR=4
+SQLITE_VACUUM_MINUTE=0
+
+# 如果服务器访问 Binance 需要代理，再开启
+HTTP_PROXY=
+HTTPS_PROXY=
+```
+
+关键配置说明：
+
+| 变量 | 默认值 | 说明 |
+| ---- | ------ | ---- |
+| `SERVER_PORT` | `8081` | 后端容器内监听端口 |
+| `SQLITE_PATH` | `/app/data/ordermonitor.db` | Docker 内 SQLite 路径 |
+| `MONITOR_DATA_RETENTION_HOURS` | `12` | 数据保留小时数 |
+| `MONITOR_CLEANUP_INTERVAL_MINUTES` | `60` | 清理旧数据的间隔 |
+| `SQLITE_VACUUM_ENABLED` | `true` | 是否每日整理数据库文件 |
+| `SQLITE_VACUUM_HOUR` | `4` | 每日 VACUUM 小时 |
+| `SQLITE_VACUUM_MINUTE` | `0` | 每日 VACUUM 分钟 |
+
+## 本地开发启动
+
+前置依赖：
+
+- Go 1.21+
+- Node.js 18+
+
+一键启动：
+
+```bash
+./start.sh
+```
+
+停止：
+
+```bash
 ./stop.sh
 ```
 
-### 手动安装依赖
+手动启动：
+
 ```bash
-cd /Users/wang/PythonProjects/coin-quant/order-monitor
-
-# 后端依赖
-cd backend
-go mod tidy
-
-# 前端依赖（包含 vue-router）
-cd ../frontend
-npm install
-```
-
-### 配置环境变量
-默认配置已写入 `internal/config/config.go`，如需覆盖请设置环境变量或创建 `.env` 文件（systemd 可使用 `EnvironmentFile`）。
-
-示例：
-```bash
-export SERVER_PORT=8080
-export MYSQL_HOST=47.128.154.233
-export MYSQL_PORT=32066
-export MYSQL_USER=root
-export MYSQL_PASSWORD=hadamysqlroot@@pass
-export MYSQL_DATABASE=order_data
-export MYSQL_PARAMS=parseTime=true
-# 可选：关闭 Redis 缓存
-export REDIS_ENABLED=false
-
-# 本地需要代理访问 Binance 时可启用
-export HTTP_PROXY=http://127.0.0.1:7890
-export HTTPS_PROXY=http://127.0.0.1:7890
-```
-
-前端本地开发可在 `frontend/.env` 中设置：
-```env
-VITE_API_BASE_URL=http://localhost:8080
-VITE_WS_URL=ws://localhost:8080
-```
-
-> 如果只希望前端通过自建网关代理 Binance，可以在页面配置面板中的 “自定义网关” / “网关代理” 输入框填写，例如 `ws://127.0.0.1:8765/ws` 与 `http://127.0.0.1:7890`。
-
-### 启动与验证
-
-#### 方式 1：使用启动脚本（推荐）
-```bash
-./start.sh
-```
-脚本会自动启动前后端，并显示访问地址。
-
-#### 方式 2：手动启动
-```bash
-# 后端
 cd backend
 go run cmd/server/main.go
+```
 
-# 前端（新开终端）
-cd ../frontend
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
-访问 `http://localhost:5173`，系统会自动重定向到 `/btc` 页面。
+本地默认访问：
 
-### 支持的币种路由
+```text
+http://localhost:5173/btc
+```
 
-- `http://localhost:5173/btc` - BTC 监控（阈值: 3）
-- `http://localhost:5173/eth` - ETH 监控（阈值: 300）
-- `http://localhost:5173/sol` - SOL 监控（阈值: 5000）
-- `http://localhost:5173/wld` - WLD 监控（阈值: 10000）
-- `http://localhost:5173/doge` - DOGE 监控（阈值: 500000）
-- `http://localhost:5173/fil` - FIL 监控（阈值: 3000）
-- `http://localhost:5173/bnb` - BNB 监控（阈值: 50）
+如果 Vite 自动切换端口，以终端输出的 `Local:` 地址为准。
 
-点击顶部导航栏可快速切换币种。终端中后端日志会输出 Binance 连接、阈值命中、数据一致性检查与 MySQL 入库情况。
+## 币种阈值
 
----
+前端展示阈值配置：
 
-## 🔌 WebSocket 消息格式
-前端通过 `ws://<host>:<port>/ws` 建立连接，后端会推送以下事件：
+```text
+frontend/src/config/coins.ts
+```
+
+后端汇总采集阈值配置：
+
+```text
+backend/internal/summary/worker.go
+```
+
+当前前端展示阈值：
+
+| 币种 | 路由 | 阈值 |
+| ---- | ---- | ---- |
+| BTC | `/btc` | `3 BTC` |
+| ETH | `/eth` | `300 ETH` |
+| SOL | `/sol` | `800 SOL` |
+| WLD | `/wld` | `10000 WLD` |
+| DOGE | `/doge` | `200000 DOGE` |
+| FIL | `/fil` | `10000 FIL` |
+| BNB | `/bnb` | `50 BNB` |
+
+## 路由
+
+```text
+/btc
+/eth
+/sol
+/wld
+/doge
+/fil
+/bnb
+/summary
+```
+
+## 公网访问与多项目部署
+
+当前 `docker-compose.yml` 将前端映射到服务器 `80` 端口：
+
+```yaml
+ports:
+  - "80:80"
+```
+
+这意味着同一台服务器上只能有一个项目直接占用 `80`。如果后续还有别的项目，建议使用域名和反向代理：
+
+- `monitor.example.com` 指向本项目。
+- `app2.example.com` 指向另一个项目。
+- 服务器最外层只开放 `80/443`，由 Caddy、Nginx 或 Traefik 按域名转发到不同容器。
+
+临时方案也可以给不同项目使用不同端口，例如 `8082:80`、`8083:80`，但长期访问体验不如域名清晰。
+
+## API 与 WebSocket
+
+前端通过同源 Nginx 代理访问后端：
+
+```text
+GET /api/health
+GET /api/monitor/:coinId
+GET /api/summary/15m
+GET /ws
+```
+
+WebSocket 主要消息：
 
 | type | payload | 说明 |
 | ---- | ------- | ---- |
-| `connection_status` | `{status,message,symbol,marketType,threshold,thresholdOp}` | 连接状态（connecting/connected/error） |
-| `heartbeat` | `{timestamp, session}` | 每 20 秒发送一次心跳 |
-| `stats_update` | `{buyWallQty,sellWallQty,buyWallCount,sellWallCount,buyValue,sellValue}` | 当前大单墙汇总 |
-| `aggregate_update` | `{windows:[{window,buyQty,sellQty,buyCnt,sellCnt}]}` | 15m/30m/1h/4h 聚合数据（V2.1 更新） |
-| `order_filled` | `{orders:[{side,price,quantity,firstSeen,filledTime,durationSec}]}` | 新增的大单成交记录 |
+| `connection_status` | `{status,message,symbol,marketType,threshold,thresholdOp}` | 连接状态 |
+| `heartbeat` | `{timestamp, session}` | 心跳 |
+| `stats_update` | `{buyWallQty,sellWallQty,buyWallCount,sellWallCount,buyValue,sellValue}` | 当前盘口大单墙统计 |
+| `aggregate_update` | `{windows:[{window,buyQty,sellQty,buyCnt,sellCnt}]}` | `15m/30m/1h/4h` 聚合数据 |
+| `order_filled` | `{orders:[{side,price,quantity,firstSeen,filledTime,durationSec}]}` | 新增大单成交记录 |
 
-前端已实现对上述消息的自动解析与状态更新。
+## 验证命令
 
----
+后端：
 
-## 🧪 测试建议
-- **后端单元测试**：针对 `tracker` 与 `aggregator` 编写测试，模拟深度消息验证阈值命中与聚合结果。
-- **集成测试**：在测试环境配置 Binance 测试网或录制的深度数据，通过 `websocket.SessionRequest` 注入，验证数据库写入与消息推送。
-- **前端联调**：使用浏览器 DevTools 观察 WebSocket 流、检查 Pinia 状态是否与服务器推送一致。必要时可在 `useWebSocket` 中开启 `console.debug`。
-- **性能监控**：部署后建议使用 `pprof` 或自定义指标（Prometheus）跟踪 session 数量、消息频率与 MySQL 写入情况。
-- **多页面测试**：同时打开多个币种页面，验证数据隔离和一致性。
+```bash
+cd backend
+go test ./...
+go build ./...
+```
 
----
+前端：
 
-## 📚 V2.1 相关文档
+```bash
+cd frontend
+npm run build
+```
 
-- **[MULTI_COIN_DEPLOYMENT.md](MULTI_COIN_DEPLOYMENT.md)** - 多币种页面详细部署指南
-- **[CHANGELOG_V2.1.md](CHANGELOG_V2.1.md)** - V2.1 完整更新日志
-- **[BUGFIX_MULTI_WINDOW.md](BUGFIX_MULTI_WINDOW.md)** - 多窗口问题修复文档
-- **[BUGFIX_PANIC_ON_RELOAD.md](BUGFIX_PANIC_ON_RELOAD.md)** - 数据一致性检查 Panic 修复（V2.1.1）
-- **[FIXES_SUMMARY.md](FIXES_SUMMARY.md)** - 所有修复总结
-- **[PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md)** - 项目架构说明
+Docker：
 
----
+```bash
+sudo docker compose up -d --build
+sudo docker compose ps
+```
 
-## 🎉 V2.1 主要改进
+## 相关文档
 
-### 解决的问题
-
-1. ✅ **买单量异常**：数据会从 1034 减到 688.94
-   - 原因：内存数据未按时间清理
-   - 解决：自动清理超过 4 小时的旧订单
-
-2. ✅ **多窗口数据混乱**：打开多个标签页后数据乱闪乱跳
-   - 原因：不同配置共享历史数据
-   - 解决：多页面隔离 + sessionRecord 缓存
-
-3. ✅ **重连后数据归零**：WebSocket 重连后统计数据归零
-   - 原因：重连时未加载历史数据
-   - 解决：sessionRecord 持久化 + 自动继承
-
-### 新增功能
-
-- 🎯 7 个币种独立监控页面
-- 🔄 每 60 秒数据一致性校验
-- 💾 历史数据缓存机制
-- 🧹 自动数据清理
-- 🚀 Vue Router 快速切换
-
----
+- [MULTI_COIN_DEPLOYMENT.md](MULTI_COIN_DEPLOYMENT.md)
+- [CHANGELOG_V2.1.md](CHANGELOG_V2.1.md)
+- [BUGFIX_MULTI_WINDOW.md](BUGFIX_MULTI_WINDOW.md)
+- [BUGFIX_PANIC_ON_RELOAD.md](BUGFIX_PANIC_ON_RELOAD.md)
+- [FIXES_SUMMARY.md](FIXES_SUMMARY.md)
+- [PROJECT_ARCHITECTURE.md](PROJECT_ARCHITECTURE.md)

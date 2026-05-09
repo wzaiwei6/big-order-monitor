@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: big-order-monitor-backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: 8081
+      SQLITE_PATH: /app/data/ordermonitor.db
+      MONITOR_DATA_RETENTION_HOURS: ${MONITOR_DATA_RETENTION_HOURS:-12}
+      MONITOR_CLEANUP_INTERVAL_MINUTES: ${MONITOR_CLEANUP_INTERVAL_MINUTES:-60}
+      SQLITE_VACUUM_ENABLED: ${SQLITE_VACUUM_ENABLED:-true}
+      SQLITE_VACUUM_HOUR: ${SQLITE_VACUUM_HOUR:-4}
+      SQLITE_VACUUM_MINUTE: ${SQLITE_VACUUM_MINUTE:-0}
+      REDIS_ENABLED: "false"
+      GIN_MODE: release
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+    volumes:
+      - ./data:/app/data
+    expose:
+      - "8081"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: big-order-monitor-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"

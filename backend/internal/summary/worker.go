@@ -58,7 +58,7 @@ func newWorker(cfg config.Config, log *zap.Logger, db *sql.DB, spec CoinSpec, wi
 		MaxTracked:  cfg.Monitor.MaxTrackedOrders,
 	})
 
-	return &worker{
+	w := &worker{
 		cfg:    cfg,
 		log:    log.With(logger.String("coin", spec.ID)),
 		db:     db,
@@ -66,6 +66,10 @@ func newWorker(cfg config.Config, log *zap.Logger, db *sql.DB, spec CoinSpec, wi
 		engine: engine,
 		window: window,
 	}
+
+	w.restoreRecentFilled()
+
+	return w
 }
 
 type depthPayload struct {
@@ -212,6 +216,55 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 		); err != nil {
 			w.log.Warn("summary worker insert failed", logger.ErrorField(err))
 		}
+	}
+}
+
+func (w *worker) restoreRecentFilled() {
+	if w.db == nil || w.window == nil {
+		return
+	}
+
+	maxWindow := time.Duration(0)
+	for _, spec := range orderagg.DefaultWindows {
+		if spec.Duration > maxWindow {
+			maxWindow = spec.Duration
+		}
+	}
+	if maxWindow <= 0 {
+		maxWindow = 4 * time.Hour
+	}
+
+	const query = `SELECT side, price, quantity, first_seen, filled_time, duration_seconds
+FROM orders_filled
+WHERE symbol = ? AND market_type = ? AND threshold = ? AND threshold_op = ? AND filled_time >= ?
+ORDER BY filled_time ASC`
+
+	cutoff := time.Now().Add(-maxWindow).Unix()
+	rows, err := w.db.Query(query, w.spec.Symbol, w.spec.MarketType, w.spec.Threshold, w.spec.ThresholdOp, cutoff)
+	if err != nil {
+		w.log.Warn("restore filled orders failed", logger.ErrorField(err))
+		return
+	}
+	defer rows.Close()
+
+	orders := make([]tracker.FilledOrder, 0, 512)
+	for rows.Next() {
+		var order tracker.FilledOrder
+		if err := rows.Scan(&order.Side, &order.Price, &order.Quantity, &order.FirstSeen, &order.FilledTime, &order.DurationSec); err != nil {
+			w.log.Warn("restore filled order scan failed", logger.ErrorField(err))
+			return
+		}
+		orders = append(orders, order)
+	}
+
+	if err := rows.Err(); err != nil {
+		w.log.Warn("restore filled order rows failed", logger.ErrorField(err))
+		return
+	}
+
+	if len(orders) > 0 {
+		w.window.add(orders)
+		w.log.Info("restored recent filled orders", zap.Int("count", len(orders)))
 	}
 }
 

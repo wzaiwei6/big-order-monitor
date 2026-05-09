@@ -147,10 +147,10 @@ function formatNumber(value: number) {
 
 .value {
   margin: 0;
-  font-size: clamp(24px, 3vw, 30px);
+  font-size: 28px;
   line-height: 1.15;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   color: var(--app-text);
 }
 
@@ -175,21 +175,48 @@ function formatNumber(value: number) {
 
 @media (max-width: 768px) {
   .stats-panel {
-    padding: 18px;
-    border-radius: 18px;
+    padding: 14px;
+    border-radius: 14px;
   }
 
   .header {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
   }
 
   .header h3 {
-    font-size: 24px;
+    font-size: 20px;
+  }
+
+  .badge {
+    padding: 6px 10px;
+    font-size: 11px;
   }
 
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .item {
+    min-height: 92px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .label {
+    margin-bottom: 8px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+
+  .value {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .caption {
+    display: none;
   }
 }
 </style>
