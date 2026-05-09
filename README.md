@@ -91,6 +91,7 @@ MONITOR_CLEANUP_INTERVAL_MINUTES=60
 SQLITE_VACUUM_ENABLED=true
 SQLITE_VACUUM_HOUR=4
 SQLITE_VACUUM_MINUTE=0
+VITE_POLL_INTERVAL_MS=500
 
 # 如果服务器访问 Binance 需要代理，再开启
 HTTP_PROXY=
@@ -108,6 +109,13 @@ HTTPS_PROXY=
 | `SQLITE_VACUUM_ENABLED` | `true` | 是否每日整理数据库文件 |
 | `SQLITE_VACUUM_HOUR` | `4` | 每日 VACUUM 小时 |
 | `SQLITE_VACUUM_MINUTE` | `0` | 每日 VACUUM 分钟 |
+| `VITE_POLL_INTERVAL_MS` | `500` | 前端展示刷新间隔，最低按 `250ms` 处理 |
+
+`VITE_POLL_INTERVAL_MS` 是前端构建变量，修改后需要重新构建前端镜像：
+
+```bash
+sudo docker compose up -d --build frontend
+```
 
 ## 本地开发启动
 

@@ -22,6 +22,7 @@ import OrderHistory from "@/components/OrderHistory.vue";
 import RealtimeStats from "@/components/RealtimeStats.vue";
 import WindowSummary from "@/components/WindowSummary.vue";
 import { getCoinConfig } from "@/config/coins";
+import { POLL_INTERVAL_MS } from "@/config/polling";
 import { useOrderStore } from "@/stores/order";
 
 const props = defineProps<{
@@ -35,6 +36,7 @@ const lastUpdated = ref<number | null>(null);
 let timer: number | null = null;
 let abortController: AbortController | null = null;
 let requestSeq = 0;
+let loading = false;
 
 function initCoinConfig() {
   const config = getCoinConfig(props.coinId);
@@ -44,8 +46,10 @@ function initCoinConfig() {
 }
 
 async function loadMonitor() {
+  if (loading) return;
+
+  loading = true;
   const currentRequest = ++requestSeq;
-  abortController?.abort();
   abortController = new AbortController();
   error.value = "";
 
@@ -86,6 +90,11 @@ async function loadMonitor() {
     const message = err instanceof Error ? err.message : "未知错误";
     error.value = `加载失败：${message}`;
     orderStore.setStatus(error.value);
+  } finally {
+    if (currentRequest === requestSeq) {
+      loading = false;
+      abortController = null;
+    }
   }
 }
 
@@ -97,10 +106,13 @@ function startPolling() {
   void loadMonitor();
   timer = window.setInterval(() => {
     void loadMonitor();
-  }, 1000);
+  }, POLL_INTERVAL_MS);
 }
 
 watch(() => props.coinId, () => {
+  abortController?.abort();
+  abortController = null;
+  loading = false;
   initCoinConfig();
   startPolling();
 }, { immediate: false });

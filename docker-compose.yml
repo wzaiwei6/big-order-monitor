@@ -28,6 +28,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_POLL_INTERVAL_MS: ${VITE_POLL_INTERVAL_MS:-500}
     container_name: big-order-monitor-frontend
     restart: unless-stopped
     depends_on:

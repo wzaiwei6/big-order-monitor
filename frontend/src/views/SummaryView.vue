@@ -9,7 +9,9 @@
         <button class="refresh" @click="loadSummary">
           手动刷新
         </button>
-        <span class="status" :class="{ error: statusType === 'error' }">{{ statusLabel }}</span>
+        <span class="status" :class="{ error: statusType === 'error' }">
+          <span v-if="statusLabel">{{ statusLabel }}</span>
+        </span>
         <span class="timestamp" v-if="lastUpdated">更新于 {{ formatTime(lastUpdated) }}</span>
       </div>
     </header>
@@ -51,6 +53,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { getCoinConfig } from "@/config/coins";
+import { POLL_INTERVAL_MS } from "@/config/polling";
 
 interface SummaryEntry {
   coinId: string;
@@ -80,7 +83,7 @@ const statusLabel = computed(() => {
   if (statusType.value === "error") {
     return statusMessage.value;
   }
-  return "自动更新 1s";
+  return "";
 });
 
 const enrichedEntries = computed(() =>
@@ -137,7 +140,7 @@ function formatTime(timestamp: number) {
 
 onMounted(async () => {
   await loadSummary();
-  timer = window.setInterval(loadSummary, 1000);
+  timer = window.setInterval(loadSummary, POLL_INTERVAL_MS);
 });
 
 onUnmounted(() => {
@@ -214,6 +217,7 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  min-width: 7px;
   font-size: 13px;
   color: var(--app-text-muted);
 }
