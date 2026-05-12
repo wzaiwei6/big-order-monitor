@@ -55,6 +55,20 @@ export const COINS: Record<string, CoinConfig> = {
     displayName: "BNB",
     defaultThreshold: 50,
     marketType: "usdtm"
+  },
+  zec: {
+    id: "zec",
+    symbol: "zecusdt",
+    displayName: "ZEC",
+    defaultThreshold: 20,
+    marketType: "usdtm"
+  },
+  binancelife: {
+    id: "binancelife",
+    symbol: "币安人生usdt",
+    displayName: "币安人生",
+    defaultThreshold: 5000,
+    marketType: "usdtm"
   }
 };
 
@@ -63,4 +77,3 @@ export const COIN_LIST = Object.values(COINS);
 export function getCoinConfig(coinId: string): CoinConfig | undefined {
   return COINS[coinId.toLowerCase()];
 }
-

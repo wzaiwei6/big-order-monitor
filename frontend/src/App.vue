@@ -8,7 +8,7 @@
           <span class="eyebrow">Binance Futures Radar</span>
           <div class="title-row">
             <h1>大额订单监控</h1>
-            <span class="subtitle">V 2.2</span>
+            <span class="subtitle">V 2.3</span>
           </div>
           <p class="description">聚焦盘口大额挂单、短周期买卖失衡与成交节奏。</p>
         </div>
@@ -179,8 +179,27 @@ onMounted(() => {
   --app-page-bottom: #171715;
 }
 
+:global(html),
+:global(body),
+:global(#app) {
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at top center, var(--app-glow-a), transparent 30%),
+    linear-gradient(180deg, var(--app-page-top) 0%, var(--app-page-bottom) 100%);
+  color: var(--app-text);
+}
+
+:global(body) {
+  overflow-x: hidden;
+}
+
 .wrapper {
+  width: 100%;
+  box-sizing: border-box;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
   overflow: hidden;
   background:

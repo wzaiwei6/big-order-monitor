@@ -32,6 +32,12 @@ interface OrderState {
   history: OrderHistoryItem[];
   stats: RealtimeStat | null;
   statusMessage: string;
+  snapshotsByCoin: Record<string, {
+    aggregates: AggregatedWindow[];
+    history: OrderHistoryItem[];
+    stats: RealtimeStat | null;
+    lastUpdated: number | null;
+  }>;
 }
 
 export const useOrderStore = defineStore("order", {
@@ -39,7 +45,8 @@ export const useOrderStore = defineStore("order", {
     aggregates: [],
     history: [],
     stats: null,
-    statusMessage: "未连接"
+    statusMessage: "未连接",
+    snapshotsByCoin: {}
   }),
   actions: {
     setAggregates(payload: AggregatedWindow[]) {
@@ -56,7 +63,31 @@ export const useOrderStore = defineStore("order", {
     },
     setStatus(message: string) {
       this.statusMessage = message;
+    },
+    setCoinSnapshot(coinId: string, payload: {
+      aggregates: AggregatedWindow[];
+      history: OrderHistoryItem[];
+      stats: RealtimeStat | null;
+      lastUpdated: number | null;
+    }) {
+      this.snapshotsByCoin[coinId] = payload;
+      this.aggregates = payload.aggregates;
+      this.history = payload.history;
+      this.stats = payload.stats;
+    },
+    restoreCoinSnapshot(coinId: string) {
+      const snapshot = this.snapshotsByCoin[coinId];
+      if (!snapshot) {
+        this.aggregates = [];
+        this.history = [];
+        this.stats = null;
+        return null;
+      }
+
+      this.aggregates = snapshot.aggregates;
+      this.history = snapshot.history;
+      this.stats = snapshot.stats;
+      return snapshot;
     }
   }
 });
-

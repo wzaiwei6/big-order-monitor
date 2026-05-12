@@ -1,8 +1,8 @@
-# Binance 大额订单监控系统 V2.2
+# Binance 大额订单监控系统 V2.3
 
 前后端分离的 Binance U 本位合约大额订单监控工具。后端使用 Go 订阅 Binance 深度数据、识别达到阈值的大额订单并写入 SQLite；前端使用 Vue 3 + Pinia + Vue Router 展示单币种监控和多币种汇总页面。
 
-## V2.2 主要变化
+## V2.3 主要变化
 
 - **SQLite 存储**：默认不再依赖 MySQL，适合轻量服务器部署。
 - **Docker 部署**：补齐后端、前端 Dockerfile 和 `docker-compose.yml`，服务器上可直接构建运行。
@@ -15,7 +15,7 @@
 
 ## 功能概览
 
-- 支持 BTC、ETH、SOL、WLD、DOGE、FIL、BNB 七个币种。
+- 支持 BTC、ETH、SOL、WLD、DOGE、FIL、BNB、ZEC、币安人生九个币种。
 - 固定监控 Binance USDT 永续合约盘口。
 - 支持大额订单阈值识别、成交记录、实时大单墙统计。
 - 支持 `15m / 30m / 1h / 4h` 多时间窗口买卖对比。
@@ -182,6 +182,8 @@ backend/internal/summary/worker.go
 | DOGE | `/doge` | `200000 DOGE` |
 | FIL | `/fil` | `10000 FIL` |
 | BNB | `/bnb` | `50 BNB` |
+| ZEC | `/zec` | `20 ZEC` |
+| 币安人生 | `/binancelife` | `5000 币安人生` |
 
 ## 路由
 
@@ -193,6 +195,8 @@ backend/internal/summary/worker.go
 /doge
 /fil
 /bnb
+/zec
+/binancelife
 /summary
 ```
 

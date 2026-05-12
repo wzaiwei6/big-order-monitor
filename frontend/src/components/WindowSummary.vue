@@ -22,10 +22,10 @@
 
     <div class="chart" v-if="window15m">
       <div class="bar">
-        <div class="segment buy" :style="{ width: buyPercent + '%' }">
+        <div v-if="buyPercent > 0" class="segment buy" :style="{ width: buyPercent + '%' }">
           <span>买 {{ buyPercent.toFixed(1) }}%</span>
         </div>
-        <div class="segment sell" :style="{ width: sellPercent + '%' }">
+        <div v-if="sellPercent > 0" class="segment sell" :style="{ width: sellPercent + '%' }">
           <span>卖 {{ sellPercent.toFixed(1) }}%</span>
         </div>
       </div>
@@ -93,6 +93,7 @@ function formatTime(timestamp: number) {
 
 <style scoped>
 .window-panel {
+  min-height: 360px;
   padding: 22px;
   border-radius: var(--app-radius-lg);
   border: 1px solid var(--app-border-soft);
@@ -300,6 +301,7 @@ function formatTime(timestamp: number) {
 
 @media (max-width: 768px) {
   .window-panel {
+    min-height: 0;
     padding: 14px;
     border-radius: 14px;
   }

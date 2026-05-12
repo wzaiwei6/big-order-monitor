@@ -3,7 +3,7 @@
     <header class="summary-header">
       <div class="title-group">
         <h1>15 分钟多币种汇总</h1>
-        <p class="subtitle">查看 7 个监控币种最近 15 分钟的买卖成交概要</p>
+        <p class="subtitle">查看 {{ coinCount }} 个监控币种最近 15 分钟的买卖成交概要</p>
       </div>
       <div class="actions">
         <button class="refresh" @click="loadSummary">
@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { getCoinConfig } from "@/config/coins";
+import { COIN_LIST, getCoinConfig } from "@/config/coins";
 import { POLL_INTERVAL_MS } from "@/config/polling";
 
 interface SummaryEntry {
@@ -72,6 +72,7 @@ interface SummaryResponse {
 }
 
 const entries = ref<SummaryEntry[]>([]);
+const coinCount = COIN_LIST.length;
 const lastUpdated = ref<number | null>(null);
 const loading = ref(false);
 const error = ref("");

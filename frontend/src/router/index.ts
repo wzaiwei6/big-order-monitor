@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
+import { COIN_LIST, getCoinConfig } from "@/config/coins";
 import CoinMonitorView from "@/views/CoinMonitorView.vue";
 import SummaryView from "@/views/SummaryView.vue";
 
@@ -12,47 +13,18 @@ const routes: RouteRecordRaw[] = [
     name: "summary",
     component: SummaryView
   },
-  {
-    path: "/btc",
-    name: "btc",
+  ...COIN_LIST.map((coin) => ({
+    path: `/${coin.id}`,
+    name: coin.id,
     component: CoinMonitorView,
-    props: { coinId: "btc" }
-  },
+    props: { coinId: coin.id }
+  })),
   {
-    path: "/eth",
-    name: "eth",
-    component: CoinMonitorView,
-    props: { coinId: "eth" }
-  },
-  {
-    path: "/sol",
-    name: "sol",
-    component: CoinMonitorView,
-    props: { coinId: "sol" }
-  },
-  {
-    path: "/wld",
-    name: "wld",
-    component: CoinMonitorView,
-    props: { coinId: "wld" }
-  },
-  {
-    path: "/doge",
-    name: "doge",
-    component: CoinMonitorView,
-    props: { coinId: "doge" }
-  },
-  {
-    path: "/fil",
-    name: "fil",
-    component: CoinMonitorView,
-    props: { coinId: "fil" }
-  },
-  {
-    path: "/bnb",
-    name: "bnb",
-    component: CoinMonitorView,
-    props: { coinId: "bnb" }
+    path: "/:pathMatch(.*)*",
+    redirect: (to) => {
+      const coinId = String(to.params.pathMatch ?? "").split("/")[0].toLowerCase();
+      return getCoinConfig(coinId) ? `/${coinId}` : "/btc";
+    }
   }
 ];
 
@@ -62,4 +34,3 @@ const router = createRouter({
 });
 
 export default router;
-

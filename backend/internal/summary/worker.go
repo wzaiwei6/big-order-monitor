@@ -38,6 +38,8 @@ var DefaultSpecs = []CoinSpec{
 	{ID: "doge", Symbol: "dogeusdt", DisplayName: "DOGE", Threshold: 1000000, ThresholdOp: "gt", MarketType: "usdtm", Depth: 20},
 	{ID: "fil", Symbol: "filusdt", DisplayName: "FIL", Threshold: 50000, ThresholdOp: "gt", MarketType: "usdtm", Depth: 20},
 	{ID: "bnb", Symbol: "bnbusdt", DisplayName: "BNB", Threshold: 100, ThresholdOp: "gt", MarketType: "usdtm", Depth: 20},
+	{ID: "zec", Symbol: "zecusdt", DisplayName: "ZEC", Threshold: 20, ThresholdOp: "gt", MarketType: "usdtm", Depth: 20},
+	{ID: "binancelife", Symbol: "币安人生usdt", DisplayName: "币安人生", Threshold: 5000, ThresholdOp: "gt", MarketType: "usdtm", Depth: 20},
 }
 
 type worker struct {

@@ -67,21 +67,26 @@ async function loadMonitor() {
       return;
     }
 
-    orderStore.setStats(payload.stats ?? null);
-    orderStore.setAggregates(payload.windows ?? []);
-    orderStore.setHistory(
-      (payload.orders ?? []).map((order: any) => ({
-        id: `${order.side}-${order.price}-${order.filledTime}`,
-        side: order.side,
-        price: order.price,
-        quantity: order.quantity,
-        firstSeen: order.firstSeen,
-        filledTime: order.filledTime,
-        durationSec: order.durationSec
-      }))
-    );
+    const nextStats = payload.stats ?? null;
+    const nextAggregates = payload.windows ?? [];
+    const nextHistory = (payload.orders ?? []).map((order: any) => ({
+      id: `${order.side}-${order.price}-${order.filledTime}`,
+      side: order.side,
+      price: order.price,
+      quantity: order.quantity,
+      firstSeen: order.firstSeen,
+      filledTime: order.filledTime,
+      durationSec: order.durationSec
+    }));
+    const nextLastUpdated = payload.generatedAt ? payload.generatedAt * 1000 : Date.now();
 
-    lastUpdated.value = payload.generatedAt ? payload.generatedAt * 1000 : Date.now();
+    orderStore.setCoinSnapshot(props.coinId, {
+      aggregates: nextAggregates,
+      history: nextHistory,
+      stats: nextStats,
+      lastUpdated: nextLastUpdated
+    });
+    lastUpdated.value = nextLastUpdated;
     orderStore.setStatus("实时快照");
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
@@ -103,6 +108,8 @@ function startPolling() {
     window.clearInterval(timer);
   }
 
+  const cachedSnapshot = orderStore.restoreCoinSnapshot(props.coinId);
+  lastUpdated.value = cachedSnapshot?.lastUpdated ?? null;
   void loadMonitor();
   timer = window.setInterval(() => {
     void loadMonitor();
